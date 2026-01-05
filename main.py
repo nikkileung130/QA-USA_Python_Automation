@@ -42,8 +42,9 @@ class TestUrbanRoutes:
 
     def test_order_2_ice_creams(self):
         #Add in S8
-        for _ in range(2):
-            #Add in S8
+        numbers_of_ice_creams = 2
+
+        for _ in range(numbers_of_ice_creams):
             print('function created for order_2_ice_creams')
             pass
 
