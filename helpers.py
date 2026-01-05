@@ -48,5 +48,4 @@ def is_url_reachable(url):
                 return False
     except Exception as e:
         print (e)
-
     return False
