@@ -11,7 +11,7 @@ def retrieve_phone_code(driver) -> str:
     code = None
     for i in range(10):
         try:
-            logs = [log["message"] for log in driver.get_log('performance') if log.get("message")
+            logs = [log["message"] for log in driver.get_log("performance") if log.get("message")
                     and 'api/v1/number?number' in log.get("message")]
             for log in reversed(logs):
                 message_data = json.loads(log)["message"]
@@ -48,3 +48,22 @@ def is_url_reachable(url):
     except Exception as e:
         print (e)
     return False
+
+def _switch_to_frame_with(self, locator):
+    """Switch into the iframe that contains the element located by locator."""
+    self.driver.switch_to.default_content()
+    frames = self.driver.find_elements(By.TAG_NAME, "iframe")
+
+    for frame in frames:
+        try:
+            self.driver.switch_to.default_content()
+            self.driver.switch_to.frame(frame)
+            if self.driver.find_elements(*locator):
+                return
+        except Exception:
+            continue
+
+    # if not found, go back
+    self.driver.switch_to.default_content()
+    raise Exception(f"Could not find element {locator} inside any iframe")
+
