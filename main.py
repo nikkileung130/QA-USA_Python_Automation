@@ -7,7 +7,6 @@ from pages import UrbanRoutesPage
 
 class TestUrbanRoutes:
 
-    @classmethod
     def setup_class(cls):
         # do not modify - we need additional logging enabled in order to retrieve phone confirmation code
         from selenium.webdriver import DesiredCapabilities
