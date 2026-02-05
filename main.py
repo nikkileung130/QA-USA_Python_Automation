@@ -22,12 +22,8 @@ class TestUrbanRoutes:
         # IMPORTANT: use capabilities here (otherwise SMS code retrieval can fail)
         cls.driver = webdriver.Chrome()
         cls.driver.get(data.URBAN_ROUTES_URL)
-
         cls.page = UrbanRoutesPage(cls.driver)
 
-    @classmethod
-    def teardown_class(cls):
-        cls.driver.quit()
 
         #------Test Cases and Expected Outcomes -----
     def test_set_route(self):

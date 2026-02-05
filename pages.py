@@ -5,8 +5,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 
-
-
 import helpers
 
 class UrbanRoutesPage:
@@ -461,6 +459,3 @@ class UrbanRoutesPage:
         modal = self.wait.until(EC.visibility_of_element_located(self.CAR_SEARCH_MODAL))
         assert modal.is_displayed()
         return True
-
-
-
