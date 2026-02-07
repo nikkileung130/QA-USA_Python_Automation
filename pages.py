@@ -39,16 +39,10 @@ class UrbanRoutesPage:
     CARD_CODE_INPUT = (By.CSS_SELECTOR,"input#code.card-input, input#code, input[name='code'], input[placeholder*='CVV'], input[placeholder*='CVC']")
     LINK_CARD_BUTTON = (By.XPATH, "//button[contains(.,'Link')]")
     CARD_INPUTS = (By.CSS_SELECTOR, "input.card-input")
-    # optional but helpful to assert card exists after linking
     CARD_ADDED_BADGE = (By.XPATH, "//*[contains(.,'Card')]")
-    CARD_INPUTS = (By.CSS_SELECTOR, "input.card-input")
-    CARD_NUMBER_INPUT = (By.CSS_SELECTOR, "input#number, input.card-input#number, input.card-input")
-    CARD_CODE_INPUT = (By.CSS_SELECTOR, "input#code, input.card-input#code")
 
     # ---- Comment for driver ----
-    COMMENT_INPUT = (By.CSS_SELECTOR, "textarea")
     COMMENT_SECTION_BUTTON = (By.XPATH,"//*[contains(.,'comment') or contains(.,'Comment') or contains(.,'driver') or contains(.,'Driver')][self::button or self::div or self::span]")
-    COMMENT_FOR_DRIVER_INPUT = (By.ID, "comment")
     COMMENT_INPUT = (By.ID, "comment")
     COMMENT_LABEL = (By.CSS_SELECTOR, "label[for='comment']")
 
@@ -60,6 +54,8 @@ class UrbanRoutesPage:
         "and contains(translate(.,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'handker')]"
         "/ancestor::*[self::div or self::label][1]")
     BLANKET_CHECKBOX = (By.XPATH, "(.//*//input[@type='checkbox'])[1]")
+    BLANKET_AND_HANDKERCHIEFS_TOGGLE = (By.XPATH, "//input[@type='checkbox' and @name='blanket']")
+    BLANKET_AND_HANDKERCHIEFS_ROW = (By.XPATH,"//*[contains(normalize-space(.), 'Blanket and handkerchiefs')]")
 
     # ----- Ordering 2 Ice Creams (Supportive Taxi) -----
     ICE_CREAM_COUNTER_VALUE = (By.CSS_SELECTOR, "div.counter-value")  # fallback if there are multiple counters
@@ -67,23 +63,18 @@ class UrbanRoutesPage:
     ICE_CREAM_PLUS = (By.XPATH,"//*[contains(., 'Ice cream') or contains(., 'Ice Cream')]/ancestor::div[1]//button[contains(., '+')]")
     ICE_CREAM_MINUS = (By.XPATH,"//*[contains(., 'Ice cream') or contains(., 'Ice Cream')]/ancestor::div[1]//button[contains(., '-')]")
     ICE_CREAM_VALUE_IN_BLOCK = (By.XPATH,"//*[contains(., 'Ice cream') or contains(., 'Ice Cream')]/ancestor::div[1]//*[contains(@class,'counter') or contains(@class,'value') or self::div]")
-    # A “section anchor” so we can scroll to the extras area reliably
     EXTRAS_ANCHOR = (By.XPATH, "//*[contains(.,'Blanket') or contains(.,'Handkerchief') or contains(.,'Ice')]")
-    # Try to find the Ice Cream row/block (text can vary a little)
     ICE_CREAM_BLOCK = (By.XPATH,"//*[contains(translate(., 'ICECREAM', 'icecream'), 'ice') and contains(translate(., 'ICECREAM', 'icecream'), 'cream')]/ancestor::*[self::div or self::li][1]")
-    # Candidate “plus” locators (different builds use different markup)
     ICE_CREAM_PLUS_IN_BLOCK = (By.XPATH,"//*[contains(translate(., 'ICECREAM', 'icecream'), 'ice') and contains(translate(., 'ICECREAM', 'icecream'), 'cream')]/ancestor::*[self::div or self::li][1]//*[self::button or self::div][.='+' or contains(@class,'plus') or contains(@aria-label,'plus') or contains(@data-testid,'plus')]")
     PLUS_ANYWHERE = (By.XPATH,"//*[self::button or self::div][.='+' or contains(@class,'plus') or contains(@aria-label,'plus') or contains(@data-testid,'plus')]")
+    ICE_CREAM_TITLE = (By.XPATH, "//*[normalize-space()='Ice cream']")
+    ICE_CREAM_COUNT = (By.XPATH,"//*[normalize-space()='Ice cream']/ancestor::*[1]//*[self::div or self::span][normalize-space(text()) and string-length(normalize-space(text()))<=2][1]")
 
     # ---- Order Taxi + Car search modal ----
-    ORDER_TAXI_BUTTON = (By.XPATH, "//button[contains(.,'Order')]")
-    CAR_SEARCH_MODAL = (By.XPATH,"//*[contains(., 'Searching') or contains(., 'searching') or contains(., 'car') or contains(., 'Car')]")
     ORDER_TAXI_BUTTON = (By.XPATH,"//button[contains(.,'Order') or contains(.,'Book') or contains(.,'Taxi')]")
     ORDER_BUTTON = (By.XPATH, "//button[contains(text(),'Order')]")
-    # --- Order Taxi ---
     ORDER_TAXI_BUTTON_PRIMARY = (By.XPATH, "//button[contains(.,'Order')]")
     ORDER_TAXI_BUTTON_FALLBACK = (By.XPATH,"//button[contains(.,'Book') or contains(.,'Submit') or contains(.,'Confirm')]")
-    # Modal (also make flexible)
     CAR_SEARCH_MODAL = (By.XPATH,"//*[contains(.,'Searching') or contains(.,'searching') or contains(.,'Looking for') or contains(.,'car')]")
 
     def __init__(self, driver):
@@ -334,6 +325,29 @@ class UrbanRoutesPage:
 
         return True
 
+    def is_blanket_and_handkerchiefs_selected(self) -> bool:
+        toggle = self.wait.until(
+            EC.presence_of_element_located(self.BLANKET_AND_HANDKERCHIEFS_TOGGLE)
+        )
+        return toggle.get_property("checked")
+
+    def is_blanket_and_handkerchiefs_selected(self) -> bool:
+        # make sure the row exists (and scroll to it)
+        row = self.wait.until(EC.presence_of_element_located(self.BLANKET_AND_HANDKERCHIEFS_ROW))
+        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", row)
+
+        # try to find the input checkbox near that row
+        try:
+            checkbox = row.find_element(By.XPATH, ".//ancestor::*[1]//input[@type='checkbox']")
+            return bool(checkbox.get_property("checked"))
+        except Exception:
+            pass
+
+        # fallback: some UIs use a role="switch" element with aria-checked
+        switch = row.find_element(By.XPATH, ".//ancestor::*[1]//*[@role='switch' or @aria-checked]")
+        aria = switch.get_attribute("aria-checked")
+        return str(aria).lower() == "true"
+
     #------ Ordering 2 Ice Creams (Supportive Taxi)-------
     def _safe_js_click(self, el):
         self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", el)
@@ -342,56 +356,21 @@ class UrbanRoutesPage:
         except Exception:
             self.driver.execute_script("arguments[0].click();", el)
 
-    def get_ice_cream_count(self) -> int:
-        """
-        Best-effort: read the ice cream counter number.
-        """
-        self.driver.switch_to.default_content()
-
-        # Try to find the number inside the ice cream block
-        try:
-            block = self.wait.until(EC.presence_of_element_located(self.ICE_CREAM_BLOCK))
-            text = block.text
-            # find first integer in the block text
-            import re
-            nums = re.findall(r"\b\d+\b", text)
-            if nums:
-                return int(nums[-1])
-        except Exception:
-            pass
-
-        # Fallback: if your build uses multiple counters, this may be noisy,
-        # but it’s better than failing to read anything.
-        try:
-            values = self.driver.find_elements(*self.ICE_CREAM_COUNTER_VALUE)
-            for v in values:
-                t = (v.text or "").strip()
-                if t.isdigit():
-                    return int(t)
-        except Exception:
-            pass
-
-        return -1  # couldn't read
-
     def add_ice_creams(self, qty: int = 2) -> bool:
         """
         Click '+' qty times for Ice Creams.
-        Does NOT touch route/plan/phone/card/comment.
         """
-
         self.driver.switch_to.default_content()
 
-        # 1) Scroll down to extras area so elements render
+        # scroll to extras area so controls render
         try:
             anchor = self.wait.until(EC.presence_of_element_located(self.EXTRAS_ANCHOR))
             self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", anchor)
         except Exception:
-            # hard fallback: scroll lower on page
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
-        # 2) Find a usable "+" element
         def find_plus():
-            # Best: "+" inside the Ice Cream block
+            # best: "+" inside ice cream block
             try:
                 els = self.driver.find_elements(*self.ICE_CREAM_PLUS_IN_BLOCK)
                 for el in els:
@@ -400,7 +379,7 @@ class UrbanRoutesPage:
             except Exception:
                 pass
 
-            # Fallback: any visible "+" on screen (often only ice cream has +)
+            # fallback: any visible "+"
             els = self.driver.find_elements(*self.PLUS_ANYWHERE)
             for el in els:
                 try:
@@ -410,19 +389,53 @@ class UrbanRoutesPage:
                     continue
             return None
 
-        # 3) Click it qty times (use JS click to avoid intercept issues)
         for _ in range(qty):
-            plus = None
             self.wait.until(lambda d: find_plus() is not None)
             plus = find_plus()
-
-            self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", plus)
-            try:
-                plus.click()
-            except Exception:
-                self.driver.execute_script("arguments[0].click();", plus)
+            self._safe_js_click(plus)
 
         return True
+
+    def get_ice_cream_count(self) -> int:
+        """
+        Read the ice cream counter number (the small number near +/-).
+        Avoids picking up unrelated numbers like 2026.
+        """
+        self.driver.switch_to.default_content()
+
+        # Make sure extras are rendered (same approach as add_ice_creams)
+        try:
+            anchor = self.wait.until(EC.presence_of_element_located(self.EXTRAS_ANCHOR))
+            self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", anchor)
+        except Exception:
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+        # Find the Ice Cream block first
+        block = self.wait.until(EC.presence_of_element_located(self.ICE_CREAM_BLOCK))
+        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", block)
+
+        # 1) Best: find a small digit element (1-2 chars) inside the block
+        # (This prevents returning 2026.)
+        candidates = block.find_elements(
+            By.XPATH,
+            ".//*[self::div or self::span]"
+            "[normalize-space(text())]"
+            "[string-length(normalize-space(text()))<=2]"
+            "[translate(normalize-space(text()), '0123456789', '')='']"
+        )
+        for el in candidates:
+            t = (el.text or "").strip()
+            if t.isdigit():
+                return int(t)
+
+        # 2) Fallback: common counter-value CSS (but filter to <=2 digits)
+        values = self.driver.find_elements(*self.ICE_CREAM_COUNTER_VALUE)
+        for v in values:
+            t = (v.text or "").strip()
+            if t.isdigit() and len(t) <= 2:
+                return int(t)
+
+        return 0
 
     # ---- Order Taxi + Car search modal ----
     def order_taxi_and_assert_search_modal(self) -> bool:

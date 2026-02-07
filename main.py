@@ -7,6 +7,7 @@ from pages import UrbanRoutesPage
 
 class TestUrbanRoutes:
 
+
     def setup_class(cls):
         # do not modify - we need additional logging enabled in order to retrieve phone confirmation code
         from selenium.webdriver import DesiredCapabilities
@@ -26,16 +27,16 @@ class TestUrbanRoutes:
 
         #------Test Cases and Expected Outcomes -----
     def test_set_route(self):
-        self.page.set_from("East 2nd Street, 601")
-        self.page.set_to("1300 1st St")
+        self.page.set_from(data.ADDRESS_FROM)
+        self.page.set_to(data.ADDRESS_TO)
 
-        assert "East 2nd Street, 601" in self.driver.page_source
-        assert "1300 1st St" in self.driver.page_source
+        assert data.ADDRESS_FROM in self.driver.page_source
+        assert data.ADDRESS_TO in self.driver.page_source
 
         # ------Selecting the Supportive Plan -----
     def test_choose_supportive_taxi(self):
-        self.page.set_from("East 2nd Street, 601")
-        self.page.set_to("1300 1st St")
+        self.page.set_from(data.ADDRESS_FROM)
+        self.page.set_to(data.ADDRESS_TO)
 
         self.page.click_call_taxi()
         self.page.choose_supportive()
@@ -44,8 +45,8 @@ class TestUrbanRoutes:
 
         # ------Filling in the Phone Number -----
     def test_fill_phone_number(self):
-        self.page.set_from("East 2nd Street, 601")
-        self.page.set_to("1300 1st St")
+        self.page.set_from(data.ADDRESS_FROM)
+        self.page.set_to(data.ADDRESS_TO)
 
         self.page.click_call_taxi()
         self.page.choose_supportive()
@@ -61,8 +62,8 @@ class TestUrbanRoutes:
         # ------Fill in the Payment -----
 
     def test_fill_card(self):
-        self.page.set_from("East 2nd Street, 601")
-        self.page.set_to("1300 1st St")
+        self.page.set_from(data.ADDRESS_FROM)
+        self.page.set_to(data.ADDRESS_TO)
 
         self.page.click_call_taxi()
         self.page.choose_supportive()
@@ -107,7 +108,7 @@ class TestUrbanRoutes:
 
         # 4) order blanket and handkerchiefs
         self.page.select_blanket_and_handkerchiefs()
-        assert True
+        assert self.page.is_blanket_and_handkerchiefs_selected() is True
 
     #------ Ordering 2 Ice Creams (Supportive Taxi)-------
     def test_order_2_ice_creams(self):
@@ -123,7 +124,8 @@ class TestUrbanRoutes:
         self.page.add_comment_for_driver(data.MESSAGE_FOR_DRIVER)
 
         # 4) Add 2 ice creams
-        assert self.page.add_ice_creams(2) is True
+        self.page.add_ice_creams(2)
+        assert self.page.get_ice_cream_count() == 2
 
     # ---- Order Taxi + Car search modal ----
     def test_order_taxi(self):
