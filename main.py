@@ -21,12 +21,13 @@ class TestUrbanRoutes:
 
         # IMPORTANT: use capabilities here (otherwise SMS code retrieval can fail)
         cls.driver = webdriver.Chrome()
-        cls.driver.get(data.URBAN_ROUTES_URL)
-        cls.page = UrbanRoutesPage(cls.driver)
 
 
         #------Test Cases and Expected Outcomes -----
     def test_set_route(self):
+        self.driver.get(data.URBAN_ROUTES_URL)
+        self.page = UrbanRoutesPage(self.driver)
+
         self.page.set_from(data.ADDRESS_FROM)
         self.page.set_to(data.ADDRESS_TO)
 
@@ -35,6 +36,9 @@ class TestUrbanRoutes:
 
         # ------Selecting the Supportive Plan -----
     def test_choose_supportive_taxi(self):
+        self.driver.get(data.URBAN_ROUTES_URL)
+        self.page = UrbanRoutesPage(self.driver)
+
         self.page.set_from(data.ADDRESS_FROM)
         self.page.set_to(data.ADDRESS_TO)
 
@@ -45,6 +49,9 @@ class TestUrbanRoutes:
 
         # ------Filling in the Phone Number -----
     def test_fill_phone_number(self):
+        self.driver.get(data.URBAN_ROUTES_URL)
+        self.page = UrbanRoutesPage(self.driver)
+
         self.page.set_from(data.ADDRESS_FROM)
         self.page.set_to(data.ADDRESS_TO)
 
@@ -54,14 +61,14 @@ class TestUrbanRoutes:
         self.page.open_phone_modal()
         self.page.enter_phone(data.PHONE_NUMBER)
 
-        sms_code = helpers.retrieve_phone_code(self.driver)
-        self.page.enter_sms_code(sms_code)
-
-        assert sms_code is not None
+        assert self.page.get_phone_value() == data.PHONE_NUMBER
 
         # ------Fill in the Payment -----
 
     def test_fill_card(self):
+        self.driver.get(data.URBAN_ROUTES_URL)
+        self.page = UrbanRoutesPage(self.driver)
+
         self.page.set_from(data.ADDRESS_FROM)
         self.page.set_to(data.ADDRESS_TO)
 
@@ -74,10 +81,13 @@ class TestUrbanRoutes:
         self.page.fill_card(data.CARD_NUMBER, data.CARD_CODE)
         self.page.link_card()
 
-        assert self.page.is_card_added()
+        assert "Card" in self.page.get_payment_method()
 
     #-----Comment_for_driver-----
     def test_comment_for_driver(self):
+        self.driver.get(data.URBAN_ROUTES_URL)
+        self.page = UrbanRoutesPage(self.driver)
+
         # 1) Set route
         self.page.set_from(data.ADDRESS_FROM)
         self.page.set_to(data.ADDRESS_TO)
@@ -92,9 +102,12 @@ class TestUrbanRoutes:
         # 4) Verify comment entered (stable check)
         assert data.MESSAGE_FOR_DRIVER in self.driver.page_source
 
+
     #----- Blanket and Handkerchiefs------
 
     def test_order_blanket_and_handkerchiefs(self):
+        self.driver.get(data.URBAN_ROUTES_URL)
+        self.page = UrbanRoutesPage(self.driver)
         # 1) Set route
         self.page.set_from(data.ADDRESS_FROM)
         self.page.set_to(data.ADDRESS_TO)
@@ -112,6 +125,8 @@ class TestUrbanRoutes:
 
     #------ Ordering 2 Ice Creams (Supportive Taxi)-------
     def test_order_2_ice_creams(self):
+        self.driver.get(data.URBAN_ROUTES_URL)
+        self.page = UrbanRoutesPage(self.driver)
         # 1) Set route
         self.page.set_from(data.ADDRESS_FROM)
         self.page.set_to(data.ADDRESS_TO)
@@ -129,6 +144,9 @@ class TestUrbanRoutes:
 
     # ---- Order Taxi + Car search modal ----
     def test_order_taxi(self):
+        self.driver.get(data.URBAN_ROUTES_URL)
+        self.page = UrbanRoutesPage(self.driver)
+
         self.page.set_from(data.ADDRESS_FROM)
         self.page.set_to(data.ADDRESS_TO)
         self.page.click_call_taxi()

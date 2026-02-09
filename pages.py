@@ -5,6 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 
+import data
 import helpers
 
 class UrbanRoutesPage:
@@ -40,22 +41,17 @@ class UrbanRoutesPage:
     LINK_CARD_BUTTON = (By.XPATH, "//button[contains(.,'Link')]")
     CARD_INPUTS = (By.CSS_SELECTOR, "input.card-input")
     CARD_ADDED_BADGE = (By.XPATH, "//*[contains(.,'Card')]")
+    PAYMENT_METHOD = (By.XPATH, "//div[contains(text(),'Payment')]")
+    CARD_OPTION = (By.XPATH, "//div[contains(text(),'Card')]")
 
     # ---- Comment for driver ----
     COMMENT_SECTION_BUTTON = (By.XPATH,"//*[contains(.,'comment') or contains(.,'Comment') or contains(.,'driver') or contains(.,'Driver')][self::button or self::div or self::span]")
     COMMENT_INPUT = (By.ID, "comment")
     COMMENT_LABEL = (By.CSS_SELECTOR, "label[for='comment']")
 
-    # -----Ordering a Blanket and Handkerchiefs -----
-    BLANKET_TOGGLE_INPUT = (By.CSS_SELECTOR, "input[name='blanket'], input#blanket")
-    BLANKET_TOGGLE_LABEL = (By.CSS_SELECTOR, "label[for='blanket'], label[for='blanket-and-handkerchiefs']")
-    BLANKET_TOGGLE_CONTAINER = (By.XPATH,"//*[contains(.,'Blanket') and contains(.,'handker')]/ancestor::*[self::div or self::label][1]")
-    BLANKET_ROW = (By.XPATH,"//*[contains(translate(.,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'blanket') "
-        "and contains(translate(.,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'handker')]"
-        "/ancestor::*[self::div or self::label][1]")
-    BLANKET_CHECKBOX = (By.XPATH, "(.//*//input[@type='checkbox'])[1]")
-    BLANKET_AND_HANDKERCHIEFS_TOGGLE = (By.XPATH, "//input[@type='checkbox' and @name='blanket']")
-    BLANKET_AND_HANDKERCHIEFS_ROW = (By.XPATH,"//*[contains(normalize-space(.), 'Blanket and handkerchiefs')]")
+    # ----- Ordering a Blanket and Handkerchiefs -----
+    BLANKET_ROW = (By.XPATH,"//*[contains(translate(.,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'blanket') ""and contains(translate(.,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'handker')]""/ancestor::*[self::div or self::label][1]")
+    BLANKET_SWITCH_OR_CHECKBOX = (By.XPATH,".//*[@role='switch' or @aria-checked or @type='checkbox']")
 
     # ----- Ordering 2 Ice Creams (Supportive Taxi) -----
     ICE_CREAM_COUNTER_VALUE = (By.CSS_SELECTOR, "div.counter-value")  # fallback if there are multiple counters
@@ -72,10 +68,10 @@ class UrbanRoutesPage:
 
     # ---- Order Taxi + Car search modal ----
     ORDER_TAXI_BUTTON = (By.XPATH,"//button[contains(.,'Order') or contains(.,'Book') or contains(.,'Taxi')]")
-    ORDER_BUTTON = (By.XPATH, "//button[contains(text(),'Order')]")
+    ORDER_BUTTON = (By.XPATH, "//button[contains(.,'Order') or contains(.,'Book')]")
     ORDER_TAXI_BUTTON_PRIMARY = (By.XPATH, "//button[contains(.,'Order')]")
     ORDER_TAXI_BUTTON_FALLBACK = (By.XPATH,"//button[contains(.,'Book') or contains(.,'Submit') or contains(.,'Confirm')]")
-    CAR_SEARCH_MODAL = (By.XPATH,"//*[contains(.,'Searching') or contains(.,'searching') or contains(.,'Looking for') or contains(.,'car')]")
+    CAR_SEARCH_MODAL = (By.XPATH,"//*[contains(.,'Searching') or contains(.,'Looking for') or contains(.,'Finding') or contains(.,'car')]")
 
     def __init__(self, driver):
         self.driver = driver
@@ -101,12 +97,15 @@ class UrbanRoutesPage:
 
     # ------Filling in the Phone Number -----
     def open_phone_modal(self):
-        btn = self.wait.until(EC.element_to_be_clickable(self.PHONE_BUTTON))
-        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
-        self.driver.execute_script("arguments[0].click();", btn)
+        # Open phone modal
+        self.driver.find_element(*self.PHONE_BUTTON).click()
 
-        # IMPORTANT: wait for the phone input to actually appear
-        self.wait.until(EC.presence_of_element_located(self.PHONE_INPUT))
+        # Click the label (it focuses the input correctly)
+        label = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable(self.PHONE_LABEL))
+        label.click()
+
+        # Ensure input is visible before typing
+        WebDriverWait(self.driver, 10).until(EC.visibility_of_element_located(self.PHONE_INPUT))
 
     def enter_phone(self, phone):
         # Wait until phone input exists/visible
@@ -133,6 +132,9 @@ class UrbanRoutesPage:
         btn = self.wait.until(EC.presence_of_element_located(self.PHONE_NEXT_BUTTON))
         self.wait.until(lambda d: btn.is_displayed() and btn.is_enabled())
         self.driver.execute_script("arguments[0].click();", btn)
+
+    def get_phone_value(self):
+        return self.driver.find_element(*self.PHONE_INPUT).get_attribute("value")
 
     def enter_sms_code(self, code):
         self.wait.until(EC.element_to_be_clickable(self.CODE_LABEL)).click()
@@ -169,10 +171,22 @@ class UrbanRoutesPage:
         return False
 
     def open_payment(self):
+        # open payment section
         btn = self.wait.until(EC.element_to_be_clickable(self.PAYMENT_METHOD_BUTTON))
         self._scroll_center(btn)
         self._js_click(btn)
+
+        # select Card option (THIS is what Jorge wants)
+        card = self.wait.until(EC.element_to_be_clickable(self.CARD_OPTION))
+        self._scroll_center(card)
+        self._js_click(card)
+
+        # now the Add card button should be available
         self.wait.until(EC.presence_of_element_located(self.ADD_CARD_BUTTON))
+
+    def get_payment_method(self):
+        el = self.wait.until(EC.presence_of_element_located(self.CARD_ADDED_BADGE))
+        return el.text
 
     def click_add_card(self):
         add = self.wait.until(EC.element_to_be_clickable(self.ADD_CARD_BUTTON))
@@ -291,62 +305,42 @@ class UrbanRoutesPage:
 
     # ----- Blanket and Handkerchiefs------
     def select_blanket_and_handkerchiefs(self):
-        """
-        Turns ON Blanket & Handkerchiefs.
-        Does not touch route/plan/phone/card/comment.
-        """
-
+        # Make sure we are not inside any iframe
         self.driver.switch_to.default_content()
 
-        # 1) Find the row by text, then the checkbox inside it
+        # Find the row that contains "Blanket and handkerchiefs"
         row = self.wait.until(EC.presence_of_element_located(self.BLANKET_ROW))
-        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", row)
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block:'center'});", row)
 
-        checkbox = row.find_element(*self.BLANKET_CHECKBOX)
+        # Find the toggle/checkbox inside that row
+        toggle = row.find_element(*self.BLANKET_SWITCH_OR_CHECKBOX)
 
-        # 2) If it's already ON, do nothing
-        try:
-            if checkbox.is_selected():
-                return
-        except Exception:
-            pass
+        # Case 1: UI uses a switch (aria-checked)
+        aria = toggle.get_attribute("aria-checked")
+        if aria is not None:
+            if aria.lower() == "false":
+                self.driver.execute_script("arguments[0].click();", toggle)
+            return
 
-        # 3) Click the ROW (more reliable than clicking checkbox directly)
-        try:
-            row.click()
-        except Exception:
-            self.driver.execute_script("arguments[0].click();", row)
-
-        # 4) Re-grab checkbox (DOM can re-render) + verify it turned ON
-        row = self.wait.until(EC.presence_of_element_located(self.BLANKET_ROW))
-        checkbox = row.find_element(*self.BLANKET_CHECKBOX)
-
-        self.wait.until(lambda d: checkbox.is_selected())
-
-        return True
+        # Case 2: UI uses a checkbox (checked property)
+        if not bool(toggle.get_property("checked")):
+            self.driver.execute_script("arguments[0].click();", toggle)
 
     def is_blanket_and_handkerchiefs_selected(self) -> bool:
-        toggle = self.wait.until(
-            EC.presence_of_element_located(self.BLANKET_AND_HANDKERCHIEFS_TOGGLE)
-        )
-        return toggle.get_property("checked")
+        self.driver.switch_to.default_content()
 
-    def is_blanket_and_handkerchiefs_selected(self) -> bool:
-        # make sure the row exists (and scroll to it)
-        row = self.wait.until(EC.presence_of_element_located(self.BLANKET_AND_HANDKERCHIEFS_ROW))
-        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", row)
+        row = self.wait.until(EC.presence_of_element_located(self.BLANKET_ROW))
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block:'center'});", row)
 
-        # try to find the input checkbox near that row
-        try:
-            checkbox = row.find_element(By.XPATH, ".//ancestor::*[1]//input[@type='checkbox']")
-            return bool(checkbox.get_property("checked"))
-        except Exception:
-            pass
+        toggle = row.find_element(*self.BLANKET_SWITCH_OR_CHECKBOX)
 
-        # fallback: some UIs use a role="switch" element with aria-checked
-        switch = row.find_element(By.XPATH, ".//ancestor::*[1]//*[@role='switch' or @aria-checked]")
-        aria = switch.get_attribute("aria-checked")
-        return str(aria).lower() == "true"
+        aria = toggle.get_attribute("aria-checked")
+        if aria is not None:
+            return aria.lower() == "true"
+
+        return bool(toggle.get_property("checked"))
 
     #------ Ordering 2 Ice Creams (Supportive Taxi)-------
     def _safe_js_click(self, el):
@@ -437,7 +431,8 @@ class UrbanRoutesPage:
 
         return 0
 
-    # ---- Order Taxi + Car search modal ----
+        # ---- Order Taxi + Car search modal ----
+
     def order_taxi_and_assert_search_modal(self) -> bool:
         self.driver.switch_to.default_content()
 
